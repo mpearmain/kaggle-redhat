@@ -2,3 +2,6 @@
 .idea/
 ./submission
 
+.Rproj.user
+/kaggle-redhat.Rproj
+/.Rhistory

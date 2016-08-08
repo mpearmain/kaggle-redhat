@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 10 15:08:00 2015
-
-@author: konrad
-"""
 
 import numpy as np
 import pandas as pd
@@ -16,30 +11,23 @@ if __name__ == '__main__':
 
     ## settings
     projPath = './'
-    dataset_version = "QC300"
+    dataset_version = "v1"
     model_type = "etrees" 
     seed_value = 789
     todate = datetime.datetime.now().strftime("%Y%m%d")
     	    
     ## data
     # read the training and test sets HACK
-    xtrain = pd.read_csv(projPath + 'input/train.csv')
-    id_train = xtrain.QuoteNumber
-    y_train_quote_flag = xtrain.QuoteConversion_Flag
-    y_train = xtrain.QuoteConversion_Flag
-    xtrain.drop('QuoteNumber', axis = 1, inplace = True)
-    xtrain.drop('QuoteConversion_Flag', axis = 1, inplace = True)
-    xtrain.drop(['PropertyField6', 'GeographicField10A'], axis=1, inplace = True)
+    xtrain = pd.read_csv(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
+    id_train = xtrain.activity_id
+    y_train_quote_flag = xtrain.outcome
+    y_train = xtrain.outcome
+    xtrain.drop('activity_id', axis = 1, inplace = True)
+    xtrain.drop('outcome', axis = 1, inplace = True)
 
-    xtest = pd.read_csv(projPath + 'input/test.csv')
-    id_test = xtest.QuoteNumber
-    xtest.drop('QuoteNumber', axis = 1, inplace = True)
-    xtest.drop(['PropertyField6', 'GeographicField10A'], axis=1, inplace = True)
-
-    xtrain = pd.read_csv(projPath + 'input/xtrain_'+ dataset_version + '.csv')
-    xtrain.drop('QuoteConversion_Flag', axis = 1, inplace = True)
-    xtest = pd.read_csv(projPath + 'input/xtest_'+ dataset_version + '.csv')
-    xtest.drop('QuoteConversion_Flag', axis = 1, inplace = True)
+    xtest = pd.read_csv(projPath + 'input/xtest_ds_' + dataset_version + '.csv')
+    id_test = xtest.activity_id
+    xtest.drop('activity_id', axis = 1, inplace = True)
 
     # folds
     xfolds = pd.read_csv(projPath + 'input/xfolds.csv')
@@ -50,14 +38,17 @@ if __name__ == '__main__':
     
     ## model
     # setup model instances
-    model = ExtraTreesClassifier(criterion='gini', 
+    model = ExtraTreesClassifier(criterion='gini',
+                                 n_estimators=500,
                                  max_depth=None, 
                                  min_weight_fraction_leaf=0.0, 
                                  max_leaf_nodes=None, 
-                                 bootstrap=False, oob_score=False,
+                                 bootstrap=True,
+                                 oob_score=True,
                                  n_jobs= -1,
                                  random_state= seed_value, 
-                                 verbose=1, warm_start=False, 
+                                 verbose=0,
+                                 warm_start=False,
                                  class_weight=None)
 
       
@@ -109,12 +100,12 @@ if __name__ == '__main__':
     # add indices etc
     mvalid = pd.DataFrame(mvalid)
     mvalid.columns = [model_type + str(i) for i in range(0, mvalid.shape[1])]
-    mvalid['QuoteNumber'] = id_train
-    mvalid['QuoteConversion_Flag'] = y_train
+    mvalid['activity_id'] = id_train
+    mvalid['outcome'] = y_train
     
     mfull = pd.DataFrame(mfull)
     mfull.columns = [model_type + str(i) for i in range(0, mfull.shape[1])]
-    mfull['QuoteNumber'] = id_test
+    mfull['activity_id'] = id_test
     
 
     # save the files            
