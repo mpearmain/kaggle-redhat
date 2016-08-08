@@ -48,7 +48,7 @@ class BinaryStackingClassifier():
 
         for model_no in range(len(self.base_classifiers)):
             print "Running Model ", model_no+1, "of", len(self.base_classifiers)
-            for j in range(1, len(n_folds)+1):
+            for j in range(0, len(n_folds)):
                 idx0 = self.xfolds[self.xfolds.ix[:,1] != j].index
                 idx1 = self.xfolds[self.xfolds.ix[:,1] == j].index
                 x0 = X[X.index.isin(idx0)]
@@ -63,16 +63,27 @@ class BinaryStackingClassifier():
             # Finally fit against all the data
             self.base_classifiers[model_no].fit(X, y, **kwargs)
 
+    def predict(self, X):
+        """
+        :param X: The data to apply the fitted model from fit
+        :return: The predict of the different classifiers - so other methods can be used i.e regressors or clusters
+        """
+        stacking_predict_data = pd.DataFrame(np.nan, index=X.index, columns=self.colnames)
+
+        for model_no in range(len(self.base_classifiers)):
+            stacking_predict_data.ix[:, model_no] = self.base_classifiers[model_no].predict(X)
+        return stacking_predict_data
+
     def predict_proba(self, X):
         """
         :param X: The data to apply the fitted model from fit
         :return: The predicted_proba of the different classifiers
         """
-        stacking_predict_data = pd.DataFrame(np.nan, index=X.index, columns=self.colnames)
+        stacking_predict_proba_data = pd.DataFrame(np.nan, index=X.index, columns=self.colnames)
 
         for model_no in range(len(self.base_classifiers)):
-            stacking_predict_data.ix[:, model_no] = self.base_classifiers[model_no].predict_proba(X)[:, 1]
-        return stacking_predict_data
+            stacking_predict_proba_data.ix[:, model_no] = self.base_classifiers[model_no].predict_proba(X)[:, 1]
+        return stacking_predict_proba_data
 
     @property
     def meta_train(self):
