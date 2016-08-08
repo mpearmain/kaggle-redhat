@@ -19,7 +19,7 @@ class BinaryStackingClassifier():
                    8,   1
                    In this class the names do not matter it is positional.
                    ##############################
-                   Fold number must start from 1.
+                   Fold number must start from 0. as per Kfold or LabelKfold in scikit-learn.
                    ##############################
     :param evaluation: optional evaluation metric (y_true, y_score) to check metric at each fold.
                     expected use case might be evaluation=sklearn.Metrics.logLoss
