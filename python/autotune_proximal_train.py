@@ -2,18 +2,13 @@ import pyximport
 pyximport.install()
 
 import numpy as np
-import glob, os
+import pandas as pd
+from sklearn.metrics import roc_auc_score as auc
 from bayes_opt import BayesianOptimization
 
+from python.proximalFM.proximal_fm import ProximalFM
+from python.proximalFM.data_reader import DataReader
 
-from sklearn.metrics import mean_squared_error
-
-from proximalFM.proximal_fm import ProximalFM
-from proximalFM.data_reader import DataReader
-
-
-def rmsle(act, preds):
-    return np.sqrt(mean_squared_error( np.log1p(act), np.log1p(preds)))
 
 def proximal_bayes(alpha, L1, L2, alpha_fm, L1_fm, L2_fm, fm_dim, fm_initDev, epoch):
     # setup bagging classifier
@@ -39,75 +34,55 @@ def proximal_bayes(alpha, L1, L2, alpha_fm, L1_fm, L2_fm, fm_dim, fm_initDev, ep
     }
 
     learner = ProximalFM(config['model'])
-    learner.fit(Xn_train, y_train)
+    learner.fit(Xn_train, y0)
 
-    preds = np.expm1(learner.predict_proba(Xn_test))
-    preds[preds < 0] = 0
-    loss = rmsle(np.expm1(y_test), preds)
+    preds = learner.predict_proba(Xn_valid)[:, 1]
+    loss = auc(y1, preds)
     return loss
 
 
 if __name__ == "__main__":
-    FMT = '%H:%M:%S'
-    # Construct loop around the weeks and always check against validation.
-    os.chdir("../input/")
-    weeklist = []
-    week_files = sorted(glob.glob("xtrain*[3-9].csv"))
-    print week_files
-    os.chdir("../python/")
 
+    projPath = './'
+    dataset_version = "v1"
+    model_type = "proximalFM"
+    seed_value = 789775
     configR = {"data_dictionary": {
-        "label": 'AdjDemand',
-        "header": ['id', 'WeekNum', 'DepotID', 'ChannelID', 'RouteID', 'ClientID', 'ProductID', 'AdjDemand',
-                   'WeeklyProductCounts', 'WeeklyClientCounts', 'WeeklyDepotIDCounts', 'WeeklyChannelCounts',
-                   'Town_En_Counts', 'State_En_Counts', 'Towns_in_State', 'ClientNameLogCounts', 'inches', 'weight',
-                   'liquids', 'pieces', 'short_nameCounts', 'brandCounts', 'has_vanilla', 'has_choco', 'has_tortil',
-                   'has_hotdog', 'has_energy', 'agu', 'aven', 'azuc', 'barr', 'barrit', 'bco', 'bes', 'bigot',
-                   'bimboll', 'bk', 'blanc', 'boll', 'bols', 'bran', 'burrit', 'canapin', 'canel', 'canelit', 'chisp',
-                   'choc', 'chochit', 'chocochisp', 'chocolat', 'clasic', 'conch', 'cong', 'cuernit', 'dalmat',
-                   'delici', 'dobl', 'dogs', 'don', 'doradit', 'duo', 'escol', 'extra', 'fibr', 'fres', 'frut', 'fs',
-                   'fsa', 'gallet', 'gansit', 'harin', 'hna', 'hot', 'integral', 'jamon', 'kc', 'lat', 'linaz', 'lors',
-                   'maiz', 'mantec', 'manzan', 'mari', 'mas', 'medi', 'mg', 'milk', 'mini', 'mix', 'mm', 'mol',
-                   'multigran', 'nit', 'noch', 'nuez', 'ondul', 'orejit', 'pack', 'pan', 'paner', 'panqu', 'pastiset',
-                   'pin', 'pinguin', 'plativol', 'polvoron', 'princip', 'reban', 'ric', 'rock', 'rol', 'sal', 'salm',
-                   'salv', 'sandwich', 'siluet', 'sponch', 'suavicrem', 'submarin', 'sup', 'surt', 'tartin', 'thins',
-                   'tir', 'tortill', 'tortillin', 'tost', 'totop', 'trak', 'triki', 'tub', 'vainill', 'wond',
-                   'zarzamor'],
-        "features": ['WeekNum', 'DepotID', 'ChannelID', 'RouteID', 'ClientID', 'ProductID',
-                     'WeeklyProductCounts', 'WeeklyClientCounts', 'WeeklyDepotIDCounts', 'WeeklyChannelCounts',
-                     'Town_En_Counts', 'State_En_Counts', 'Towns_in_State', 'ClientNameLogCounts', 'inches', 'weight',
-                     'liquids', 'pieces', 'short_nameCounts', 'brandCounts', 'has_vanilla', 'has_choco', 'has_tortil',
-                     'has_hotdog', 'has_energy'],
+        "label": 'outcome',
+        "header": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x', 'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth', 'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y', 'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12', 'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20', 'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28', 'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36', 'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'activity_id', 'days_diff'],
+        "features": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x', 'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth', 'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y', 'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12', 'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20', 'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28', 'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36', 'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'days_diff'],
         "features_dim": 25,
     }
     }
 
-    ##################### Week 3 #############################
-    ## Have to run week 3 independent to generate weights to be used
-    reader = DataReader(configR['data_dictionary'])
-    X_train, y_train = reader.load_data("../input/xtrain_week3.csv")
-    Xn_train = reader.transform(X_train)
-    del X_train
-    y_train = y_train.astype('int32')
-    y_train = np.log1p(y_train)
 
-    #### TEST #######
-    X_test, y_test = reader.load_data("../input/xtrain_week9.csv")
-    Xn_test = reader.transform(X_test)
-    del X_test
-    y_test = y_test.astype('int32')
-    y_test = np.log1p(y_test)
+    reader = DataReader(configR['data_dictionary'])
+    ## data
+    xtrain, y_train = reader.load_data(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
+    # folds
+    xfolds = pd.read_csv(projPath + 'input/5-fold.csv')
+
+    # work with validation split
+    idx0 = xfolds[xfolds.fold5 != 1].index
+    idx1 = xfolds[xfolds.fold5 == 1].index
+    x0 = xtrain[xtrain.index.isin(idx0)]
+    x1 = xtrain[xtrain.index.isin(idx1)]
+    y0 = y_train[y_train.index.isin(idx0)]
+    y1 = y_train[y_train.index.isin(idx1)]
+
+    Xn_train = reader.transform(x0)
+    Xn_valid = reader.transform(x1)
 
     proximal_bayes = BayesianOptimization(proximal_bayes,
-                                          {"alpha": (0.01, 0.1),
-                                           "L1": (0., 1.),
+                                          {"alpha": (0.001, 0.5),
+                                           "L1": (0., 2.),
                                            "L2": (0., 2.),
-                                           "alpha_fm": (0.001, 0.2),
-                                           "L1_fm": (0., 1.),
+                                           "alpha_fm": (0.0001, 0.5),
+                                           "L1_fm": (0., 2.),
                                            "L2_fm": (0., 2.),
-                                           "fm_dim": (int(4), int(10)),
+                                           "fm_dim": (int(4), int(15)),
                                            "fm_initDev": (0.05, 0.3),
-                                           "epoch": (int(2), int(10))
+                                           "epoch": (int(2), int(20))
                                            })
     proximal_bayes.maximize(init_points=5, n_iter=50)
     print('-' * 53)
