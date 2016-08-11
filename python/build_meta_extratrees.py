@@ -35,7 +35,7 @@ if __name__ == '__main__':
         ets2 = ExtraTreesClassifier(criterion='entropy', n_estimators=1000, n_jobs=-1, random_state=seed_value)
 
         stacker = BinaryStackingClassifier([ets1, ets2], xfolds=xfolds, evaluation=auc)
-        stacker.colnames = ['ets1', 'ets2']
+        stacker.colnames = ['ets1'+dataset_version, 'ets2'+dataset_version]
         stacker.fit(train, y_train)
 
         meta = stacker.meta_train

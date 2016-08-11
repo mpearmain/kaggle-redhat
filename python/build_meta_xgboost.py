@@ -35,20 +35,16 @@ if __name__ == '__main__':
 
     bst1 = xgb.XGBClassifier(n_estimators=1364, nthread=-1, max_depth=6, min_child_weight=1.0, learning_rate=0.4,
                              silent=True, subsample=0.9, colsample_bytree=0.6, gamma=0.05, seed=seed_value)
-    bst2 = xgb.XGBClassifier(n_estimators=1364, nthread=-1, max_depth=6, min_child_weight=1.0, learning_rate=0.4,
+    bst2 = xgb.XGBRegressor(n_estimators=1364, nthread=-1, max_depth=6, min_child_weight=1.0, learning_rate=0.4,
                              silent=True, subsample=0.9, colsample_bytree=0.6, gamma=0.05, seed=seed_value,)
-    bst3 = xgb.XGBClassifier(n_estimators=500, nthread=-1, max_depth=12, min_child_weight=1.0, learning_rate=0.05,
-                             silent=True, subsample=0.85, colsample_bytree=0.78, gamma=0.0000001, seed=seed_value)
-    bst4 = xgb.XGBClassifier(n_estimators=500, nthread=-1, max_depth=12, min_child_weight=1.0, learning_rate=0.05,
-                             silent=True, subsample=0.85, colsample_bytree=0.78, gamma=0.0000001, seed=seed_value)
-    bst5 = xgb.XGBClassifier(n_estimators=500, nthread=-1, max_depth=12, min_child_weight=1.0, learning_rate=0.05,
-                             silent=True, subsample=0.85, colsample_bytree=0.78, gamma=0.0000001, seed=seed_value)
-    bst6 = xgb.XGBClassifier(n_estimators=500, nthread=-1, max_depth=12, min_child_weight=1.0, learning_rate=0.05,
-                             silent=True, subsample=0.85, colsample_bytree=0.78, gamma=0.0000001, seed=seed_value)
-    
+    bst3 = xgb.XGBClassifier(n_estimators=555, nthread=-1, max_depth=12, min_child_weight=2.1, learning_rate=0.1,
+                             silent=True, subsample=0.8, colsample_bytree=0.85, gamma=0.000000001, seed=seed_value)
+    bst4 = xgb.XGBRegressor(n_estimators=555, nthread=-1, max_depth=12, min_child_weight=2.1, learning_rate=0.1,
+                             silent=True, subsample=0.8, colsample_bytree=0.85, gamma=0.000000001, seed=seed_value)
 
-    stacker = BinaryStackingClassifier([bst1, bst2, bst3, bst4, bst5, bst6], xfolds=xfolds, evaluation=auc)
-    stacker.colnames = ['bst1', 'bst2', 'bst3', 'bst4', 'bst5', 'bst6']
+
+    stacker = BinaryStackingClassifier([bst1, bst2, bst3, bst4], xfolds=xfolds, evaluation=auc)
+    stacker.colnames = ['bst1GBTREECLASS', 'bst2GBTREEREG', 'bst3GBTREECLASS', 'bst4GBTREEREG']
     stacker.fit(train, y_train, eval_metric='auc')
 
     meta = stacker.meta_train
