@@ -1,7 +1,6 @@
 import pyximport
 pyximport.install()
 
-import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score as auc
 from bayes_opt import BayesianOptimization
@@ -90,45 +89,3 @@ if __name__ == "__main__":
     print('Final Results')
     print('PromixmalFM: %f' % proximal_bayes.res['max']['max_val'])
     print(proximal_bayes.res['max']['max_params'])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # ################## TEST SET  #############################
-    # X_test, y_test = reader.load_data("./xtest.csv")
-    # Xn_test = reader.transform(X_test)
-    # p_test = learner.predict(Xn_test)
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-    # with open('../input/xsubmission_valid.csv', 'w') as outfile:
-    #     outfile.write('id,Demanda_uni_equil\n')
-    #     reader = DataFileReader('../input/xtest.ftrl', config['data_description'], config['model'])
-    #     learner = Proximal(config=config['model'])
-    #     print "Loading trainer weights n, z"
-    #     learner.fromfile("../input/xtrain.pkl")
-    #     for _, id, x, _ in reader.data():
-    #         p, _ = learner.predict(x)
-    #         outfile.write('%s,%.3f\n' % (id, expm1(max(0, p))))
-    #         if((t % 1000000) == 0):
-    #             print(t)
-    # print('Finished')
