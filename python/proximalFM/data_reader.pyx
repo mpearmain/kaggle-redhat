@@ -43,7 +43,7 @@ cdef class DataReader(object):
         '''
         free(self._features)
         
-    def load_data(self, path):
+    def load_data(self, path, test_data=False):
         """ Load data from a csv file as a pandas data frame and convert to a numpy 
             array. 
             Args:
@@ -56,6 +56,8 @@ cdef class DataReader(object):
         """
         # TODO need to add in error checking in case data does not conform to data dictionary
         X = pd.read_csv(path).as_matrix()
+        if test_data:
+            return X
         y = X[:,self._label_idx]
         X = X[:,self._features_idx]
         return X,y

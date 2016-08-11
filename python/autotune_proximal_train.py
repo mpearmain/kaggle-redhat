@@ -36,7 +36,7 @@ def proximal_bayes(alpha, L1, L2, alpha_fm, L1_fm, L2_fm, fm_dim, fm_initDev, ep
     learner = ProximalFM(config['model'])
     learner.fit(Xn_train, y0)
 
-    preds = learner.predict_proba(Xn_valid)[:, 1]
+    preds = learner.predict_proba(Xn_valid)
     loss = auc(y1, preds)
     return loss
 
@@ -83,8 +83,8 @@ if __name__ == "__main__":
     idx1 = np.where(fold_index == 0)
     x0 = np.array(xtrain)[idx0, :][0]
     x1 = np.array(xtrain)[idx1, :][0]
-    y0 = np.array(ytrain)[idx0]
-    y1 = np.array(ytrain)[idx1]
+    y0 = np.array(ytrain)[idx0].astype('int32')
+    y1 = np.array(ytrain)[idx1].astype('int32')
 
     Xn_train = reader.transform(x0)
     Xn_valid = reader.transform(x1)

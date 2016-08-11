@@ -90,7 +90,7 @@ def read_test_train():
                        dtype={'people_id': np.str,
                               'activity_id': np.str},
                        parse_dates=['date'])
-    id_test = train['activity_id']
+    id_test = test['activity_id']
     # Preprocess each df
     peeps = preprocess_people(people)
     actions_train = preprocess_acts(train)
