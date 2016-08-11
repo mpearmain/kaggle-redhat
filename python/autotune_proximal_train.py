@@ -2,11 +2,12 @@ import pyximport
 pyximport.install()
 
 import pandas as pd
+import numpy as np
 from sklearn.metrics import roc_auc_score as auc
 from bayes_opt import BayesianOptimization
 
-from python.proximalFM.proximal_fm import ProximalFM
-from python.proximalFM.data_reader import DataReader
+from proximalFM.proximal_fm import ProximalFM
+from proximalFM.data_reader import DataReader
 
 
 def proximal_bayes(alpha, L1, L2, alpha_fm, L1_fm, L2_fm, fm_dim, fm_initDev, epoch):
@@ -48,8 +49,22 @@ if __name__ == "__main__":
     seed_value = 789775
     configR = {"data_dictionary": {
         "label": 'outcome',
-        "header": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x', 'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth', 'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y', 'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12', 'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20', 'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28', 'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36', 'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'activity_id', 'days_diff'],
-        "features": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x', 'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth', 'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y', 'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12', 'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20', 'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28', 'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36', 'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'days_diff'],
+        "header": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x',
+                   'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth',
+                   'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y',
+                   'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12',
+                   'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20',
+                   'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28',
+                   'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36',
+                   'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'activity_id', 'days_diff'],
+        "features": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x',
+                     'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth',
+                     'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y',
+                     'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12',
+                     'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20',
+                     'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28',
+                     'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36',
+                     'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'days_diff'],
         "features_dim": 25,
     }
     }
@@ -57,17 +72,19 @@ if __name__ == "__main__":
 
     reader = DataReader(configR['data_dictionary'])
     ## data
-    xtrain, y_train = reader.load_data(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
+    xtrain, ytrain = reader.load_data(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
     # folds
     xfolds = pd.read_csv(projPath + 'input/5-fold.csv')
+    fold_index = xfolds.fold5
 
     # work with validation split
-    idx0 = xfolds[xfolds.fold5 != 1].index
-    idx1 = xfolds[xfolds.fold5 == 1].index
-    x0 = xtrain[xtrain.index.isin(idx0)]
-    x1 = xtrain[xtrain.index.isin(idx1)]
-    y0 = y_train[y_train.index.isin(idx0)]
-    y1 = y_train[y_train.index.isin(idx1)]
+    print "Creating validation for bayes tuning."
+    idx0 = np.where(fold_index != 0)
+    idx1 = np.where(fold_index == 0)
+    x0 = np.array(xtrain)[idx0, :][0]
+    x1 = np.array(xtrain)[idx1, :][0]
+    y0 = np.array(ytrain)[idx0]
+    y1 = np.array(ytrain)[idx1]
 
     Xn_train = reader.transform(x0)
     Xn_valid = reader.transform(x1)
