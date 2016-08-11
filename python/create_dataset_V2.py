@@ -28,8 +28,8 @@ def preprocess_acts(data, trainset = True):
     for col in columns[1:]:
         print "Processing", col
         data[col] = data[col].fillna('type 0')
-        data[col] = data[col].apply(lambda x: x.split(' ')[1])
-        data[col] = pd.to_numeric(data[col]).astype(int)
+        le = LabelEncoder()
+        data[col] = data.groupby(le.fit_transform(data[col]))[col].transform('count') / data.shape[0]
 
     data['t_sum_true'] = data[columns[2:11]].sum(axis=1)
 
@@ -56,8 +56,8 @@ def preprocess_people(data):
     # So they can be used in other models.
     for col in strings:
         data[col] = data[col].fillna('type 0')
-        data[col] = data[col].apply(lambda x: x.split(' ')[1])
-        data[col] = pd.to_numeric(data[col]).astype(int)
+        le = LabelEncoder()
+        data[col] = data.groupby(le.fit_transform(data[col]))[col].transform('count') / data.shape[0]
 
     print "Processing dates"
     data['pyear'] = data['date'].dt.year
@@ -113,7 +113,6 @@ def read_test_train():
     train.drop(['date_x', 'date_y'], axis=1, inplace=True)
     test.drop(['date_x', 'date_y'], axis=1, inplace=True)
 
-
     return train, test
 
 
@@ -121,7 +120,7 @@ train, test= read_test_train()
 print('Length of train: ', len(train))
 print('Length of test: ', len(test))
 
-train.to_csv("./input/xtrain_ds_v1.csv", index=False, header=True)
-test.to_csv("./input/xtest_ds_v1.csv", index=False, header=True)
+train.to_csv("./input/xtrain_ds_v2.csv", index=False, header=True)
+test.to_csv("./input/xtest_ds_v2.csv", index=False, header=True)
 
 print "Done"

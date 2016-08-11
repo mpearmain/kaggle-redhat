@@ -45,9 +45,9 @@ class BinaryStackingClassifier():
         """
         # Loop over the different classifiers.
         n_folds = self.xfolds.ix[:,1].unique()
-
         for model_no in range(len(self.base_classifiers)):
             print "Running Model ", model_no+1, "of", len(self.base_classifiers)
+            loss_avg = 0
             for j in range(0, len(n_folds)):
                 idx0 = self.xfolds[self.xfolds.ix[:,1] != j].index
                 idx1 = self.xfolds[self.xfolds.ix[:,1] == j].index
@@ -58,8 +58,11 @@ class BinaryStackingClassifier():
                 self.base_classifiers[model_no].fit(x0, y0, **kwargs)
                 predicted_y_proba = self.base_classifiers[model_no].predict_proba(x1)[:, 1]
                 if self.evaluation is not None:
-                    print "Current Loss = ", self.evaluation(y1, predicted_y_proba)
+                    loss = self.evaluation(y1, predicted_y_proba)
+                    print "Current Fold Loss = ", loss
+                    loss_avg += loss
                 self.stacking_train.ix[self.stacking_train.index.isin(idx1), model_no] = predicted_y_proba
+            print "Model CV-Loss across folds =", loss_avg / len(n_folds)
             # Finally fit against all the data
             self.base_classifiers[model_no].fit(X, y, **kwargs)
 
