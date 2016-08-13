@@ -57,6 +57,7 @@ cdef class DataReader(object):
         # TODO need to add in error checking in case data does not conform to data dictionary
         X = pd.read_csv(path).as_matrix()
         if test_data:
+            X = X[:,self._features_idx]
             return X
         y = X[:,self._label_idx]
         X = X[:,self._features_idx]
