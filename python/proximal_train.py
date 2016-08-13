@@ -2,28 +2,23 @@ import pyximport
 pyximport.install()
 
 import numpy as np
-import glob, os
+import pandas as pd
+import datetime
 
-from scipy.sparse import vstack
-
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import roc_auc_score as auc
 
 from proximalFM.proximal_fm import ProximalFM
 from proximalFM.data_reader import DataReader
 
-
-def rmsle(act, preds):
-    return np.sqrt(mean_squared_error( np.log1p(act), np.log1p(preds)))
-
+from python.binary_stacker import BinaryStackingClassifier
 
 if __name__ == "__main__":
-    FMT = '%H:%M:%S'
-    # Construct loop around the weeks and always check against validation.
-    os.chdir("../input/")
-    weeklist = []
-    week_files = sorted(glob.glob("xtrain*[3-9].csv"))
-    print week_files
-    os.chdir("../python/")
+
+    projPath = './'
+    dataset_version = "v1"
+    model_type = "proximalFM"
+    seed_value = 789775
+    todate = datetime.datetime.now().strftime("%Y%m%d")
 
     config =  {"model": {
         "modelFile": "model.pkl",
@@ -42,75 +37,51 @@ if __name__ == "__main__":
         "report_frequency": 100000,
         "warm_start": False,  # if True, reuse the solution of the previous call to fit otherwise erase
         # previous solution
-        "epoch": 5  # learn training data for N passes
+        "epoch": 2  # learn training data for N passes
     },
         "data_dictionary": {
-            "label": 'AdjDemand',
-            "header": ['id', 'DepotID', 'ChannelID', 'RouteID', 'ClientID', 'ProductID', 'AdjDemand',
-                       'WeeklyProductCounts', 'WeeklyClientCounts', 'WeeklyDepotIDCounts', 'WeeklyChannelCounts',
-                       'Town_En_Counts', 'State_En_Counts', 'Towns_in_State', 'ClientNameLogCounts', 'inches', 'weight',
-                       'liquids', 'pieces', 'has_vanilla', 'has_choco', 'has_tortil',
-                       'has_hotdog', 'has_energy'],
-            "features": ['DepotID', 'ChannelID', 'RouteID', 'ClientID', 'ProductID',
-                         'WeeklyProductCounts', 'WeeklyClientCounts', 'WeeklyDepotIDCounts', 'WeeklyChannelCounts',
-                         'Town_En_Counts', 'State_En_Counts', 'Towns_in_State', 'ClientNameLogCounts', 'inches', 'weight',
-                         'liquids', 'pieces', 'has_vanilla', 'has_choco', 'has_tortil',
-                         'has_hotdog', 'has_energy'],
-            "features_dim": 25,
+        "label": 'outcome',
+        "header": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x',
+                   'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth',
+                   'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y',
+                   'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12',
+                   'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20',
+                   'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28',
+                   'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36',
+                   'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'activity_id', 'days_diff'],
+        "features": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x',
+                     'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth',
+                     'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y',
+                     'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12',
+                     'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20',
+                     'char_21', 'char_22', 'char_23', 'char_24', 'char_25', 'char_26', 'char_27', 'char_28',
+                     'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36',
+                     'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'days_diff'],
+        "features_dim": 25,
         }
     }
 
     ##################### Week 3 #############################
+    ## data
     reader = DataReader(config['data_dictionary'])
-    learner = ProximalFM(config['model'])
-    for week in week_files:
-        print "Loading Week file", week
-        X_train, y_train = reader.load_data("../input/"+week)
-        Xn_train = reader.transform(X_train)
+    xtrain, ytrain = reader.load_data(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
+    xtest = reader.load_data(projPath + 'input/xtrain_ds_' + dataset_version + '.csv', test_data=True)
+    submission = pd.read_csv(projPath + 'input/sample_submission.csv')
+    # folds
+    xfolds = pd.read_csv(projPath + 'input/5-fold.csv')
+    fold_index = xfolds.fold5
 
-        del X_train
+    Xn_train = reader.transform(xtrain)
+    Xn_test = reader.transform(xtest)
+    ftrlfm = ProximalFM(config['model'])
 
-        y_train = y_train.astype('int32')
-        y_train = np.log1p(y_train)
-        print "Training"
-        learner.fit(Xn_train, y_train)
-        del Xn_train, y_train
+    stacker = BinaryStackingClassifier([ftrlfm], xfolds=xfolds, evaluation=auc)
+    stacker.fit(Xn_train, ytrain)
 
-        if week == 'xtrain_week7.csv':
-            print "Building out validation week 8"
-            X_valid, y_valid = reader.load_data("../input/xtrain_week8.csv")
-            Xn_valid = reader.transform(X_valid)
-            del X_valid
-            y_valid = y_valid.astype('int32')
-            y_valid = np.log1p(y_valid)
-            preds = np.expm1(learner.predict_proba(Xn_valid))
-            preds[preds < 0] = 0
-            loss = rmsle(np.expm1(y_valid), preds)
-            del y_valid, Xn_valid
-            print "TRAIN WEEKS 3-7, VALIDATION 8 LOSS:", loss
-            np.savetxt("../input/pr_val_week8_proximalFM.csv", preds, delimiter=",")
+    meta = stacker.meta_train
+    meta['activity_id'] = xfolds['activity_id']
+    meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index = False, header = True)
 
-            print "Building out validation"
-            X_valid, y_valid = reader.load_data("../input/xtrain_week9.csv")
-            Xn_valid = reader.transform(X_valid)
-            del X_valid
-            y_valid = y_valid.astype('int32')
-            y_valid = np.log1p(y_valid)
-            preds = np.expm1(learner.predict_proba(Xn_valid))
-            preds[preds < 0] = 0
-            loss = rmsle(np.expm1(y_valid), preds)
-            del y_valid, Xn_valid
-            print "TRAIN WEEKS 3-7, VALIDATION 9 LOSS:", loss
-            np.savetxt("../input/pr_val_week9_proximalFM.csv", preds, delimiter=",")
-
-    #### TEST #######
-    X_test, y_test = reader.load_data("../input/xtest.csv")
-    Xn_test = reader.transform(X_test)
-    del X_test
-    y_test = y_test.astype('int32')
-    y_test = np.log1p(y_test)
-    preds = np.expm1(learner.predict_proba(Xn_test))
-    preds[preds < 0] = 0
-    np.savetxt("../input/pr_full_proximalFM.csv", preds, delimiter=",")
-
-
+    preds = stacker.predict_proba(Xn_test)
+    preds['activity_id'] = submission['activity_id']
+    preds.to_csv(projPath + 'metafeatures/prfull_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index=False, header=True)
