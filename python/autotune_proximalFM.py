@@ -58,7 +58,7 @@ if __name__ == "__main__":
                    'char_29', 'char_30', 'char_31', 'char_32', 'char_33', 'char_34', 'char_35', 'char_36',
                    'char_37', 'char_38', 'p_sum_true', 'pyear', 'pmonth', 'pyearweek', 'pday', 'activity_id', 'days_diff'],
         "features": ['people_id', 'activity_category', 'char_1_x', 'char_2_x', 'char_3_x', 'char_4_x', 'char_5_x',
-                     'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'outcome', 'tyear', 'tmonth',
+                     'char_6_x', 'char_7_x', 'char_8_x', 'char_9_x', 'char_10_x', 'tyear', 'tmonth',
                      'tyearweek', 'tday', 't_sum_true', 'char_1_y', 'group_1', 'char_2_y', 'char_3_y', 'char_4_y',
                      'char_5_y', 'char_6_y', 'char_7_y', 'char_8_y', 'char_9_y', 'char_10_y', 'char_11', 'char_12',
                      'char_13', 'char_14', 'char_15', 'char_16', 'char_17', 'char_18', 'char_19', 'char_20',
@@ -96,11 +96,11 @@ if __name__ == "__main__":
                                            "alpha_fm": (0.0001, 0.5),
                                            "L1_fm": (0., 2.),
                                            "L2_fm": (0., 2.),
-                                           "fm_dim": (int(4), int(15)),
+                                           "fm_dim": (int(4), int(10)),
                                            "fm_initDev": (0.05, 0.3),
-                                           "epoch": (int(2), int(20))
+                                           "epoch": (int(2), int(10))
                                            })
-    proximal_bayes.maximize(init_points=5, n_iter=50)
+    proximal_bayes.maximize(init_points=5, n_iter=20)
     print('-' * 53)
 
     print('Final Results')
