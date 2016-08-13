@@ -9,9 +9,9 @@ if __name__ == '__main__':
 
     ## settings
     projPath = './'
-    datasets = ["v1", "v2"]
+    datasets = ["v1", "v2", "v3"]
     model_type = "etrees"
-    seed_value = 789775
+    seed_value = 78543
     todate = datetime.datetime.now().strftime("%Y%m%d")
 
     for dataset_version in datasets:
@@ -31,15 +31,15 @@ if __name__ == '__main__':
 
         ## model
         # setup model instances
-        ets1 = ExtraTreesClassifier(criterion='gini', n_estimators=1000, n_jobs=-1, random_state=seed_value)
-        ets2 = ExtraTreesClassifier(criterion='entropy', n_estimators=1000, n_jobs=-1, random_state=seed_value)
+        ets1 = ExtraTreesClassifier(criterion='gini', n_estimators=500, n_jobs=-1, random_state=seed_value)
+        ets2 = ExtraTreesClassifier(criterion='entropy', n_estimators=500, n_jobs=-1, random_state=seed_value)
 
         stacker = BinaryStackingClassifier([ets1, ets2], xfolds=xfolds, evaluation=auc)
         stacker.colnames = ['ets1'+dataset_version, 'ets2'+dataset_version]
         stacker.fit(train, y_train)
 
         meta = stacker.meta_train
-        meta['activity_id'] = id_train = train.activity_id
+        meta['activity_id'] = id_train
         meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index = False, header = True)
 
         preds = stacker.predict_proba(test)
