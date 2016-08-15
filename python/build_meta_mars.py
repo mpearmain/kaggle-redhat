@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
-from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.linear_model.logistic import LogisticRegression
+from sklearn.pipeline import Pipeline
+from pyearth.earth import Earth
 from sklearn.metrics import roc_auc_score as auc
 from python.binary_stacker import BinaryStackingClassifier
 import datetime
@@ -9,8 +11,8 @@ if __name__ == '__main__':
 
     ## settings
     projPath = './'
-    datasets = ["v1", "v2", "v3"]
-    model_type = "etrees"
+    datasets = ["v2"]
+    model_type = "mars"
     seed_value = 78543
     todate = datetime.datetime.now().strftime("%Y%m%d")
 
@@ -31,10 +33,14 @@ if __name__ == '__main__':
 
         ## model
         # setup model instances
-        ets1 = ExtraTreesClassifier(criterion='gini', n_estimators=500, n_jobs=-1, random_state=seed_value)
-        ets2 = ExtraTreesClassifier(criterion='entropy', n_estimators=500, n_jobs=-1, random_state=seed_value)
+        # Combine Earth with LogisticRegression in a pipeline to do classification
+        earth_classifier1 = Pipeline([('earth', Earth(max_degree=2, penalty=1.5)),
+                                     ('logistic', LogisticRegression())])
+        # Combine Earth with LogisticRegression in a pipeline to do classification
+        earth_classifier2 = Pipeline([('earth', Earth(max_degree=3, penalty=2)),
+                                     ('logistic', LogisticRegression())])
 
-        stacker = BinaryStackingClassifier([ets1, ets2], xfolds=xfolds, evaluation=auc)
+        stacker = BinaryStackingClassifier([earth_classifier1, earth_classifier2], xfolds=xfolds, evaluation=auc)
         stacker.fit(train, y_train)
 
         meta = stacker.meta_train
