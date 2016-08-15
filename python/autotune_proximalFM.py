@@ -79,8 +79,8 @@ if __name__ == "__main__":
 
     # work with validation split
     print "Creating validation for bayes tuning."
-    idx0 = np.where(fold_index != 0)
-    idx1 = np.where(fold_index == 0)
+    idx0 = np.where(fold_index != 1)
+    idx1 = np.where(fold_index == 1)
     x0 = np.array(xtrain)[idx0, :][0]
     x1 = np.array(xtrain)[idx1, :][0]
     y0 = np.array(ytrain)[idx0].astype('int32')

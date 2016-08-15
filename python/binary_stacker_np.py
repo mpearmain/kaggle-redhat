@@ -67,7 +67,7 @@ class BinaryStackingClassifierNP():
                     print "Current Fold Loss = ", loss
                     loss_avg += loss
                 self.stacking_train.ix[self.stacking_train.index.isin(idx1pd), model_no] = predicted_y_proba.ravel()
-            print "Model CV-Loss across folds =", loss_avg / len(n_folds)
+            print "Model CV-Loss across folds =", loss_avg / n_folds
             # Finally fit against all the data
             self.base_classifiers[model_no].fit(X, y, **kwargs)
 
@@ -76,7 +76,7 @@ class BinaryStackingClassifierNP():
         :param X: The data to apply the fitted model from fit
         :return: The predict of the different classifiers - so other methods can be used i.e regressors or clusters
         """
-        stacking_predict_data = pd.DataFrame(np.nan, index=X.index, columns=self.colnames)
+        stacking_predict_data = pd.DataFrame(np.nan, index=np.arange(X.shape[0]), columns=self.colnames)
 
         for model_no in range(len(self.base_classifiers)):
             stacking_predict_data.ix[:, model_no] = self.base_classifiers[model_no].predict(X)
@@ -87,7 +87,7 @@ class BinaryStackingClassifierNP():
         :param X: The data to apply the fitted model from fit
         :return: The predicted_proba of the different classifiers
         """
-        stacking_predict_proba_data = pd.DataFrame(np.nan, index=X.index, columns=self.colnames)
+        stacking_predict_proba_data = pd.DataFrame(np.nan, index = np.arange(X.shape[0]), columns=self.colnames)
 
         for model_no in range(len(self.base_classifiers)):
             stacking_predict_proba_data.ix[:, model_no] = self.base_classifiers[model_no].predict_proba(X).ravel()
