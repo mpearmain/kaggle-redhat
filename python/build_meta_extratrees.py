@@ -35,11 +35,12 @@ if __name__ == '__main__':
         ets2 = ExtraTreesClassifier(criterion='entropy', n_estimators=500, n_jobs=-1, random_state=seed_value)
 
         stacker = BinaryStackingClassifier([ets1, ets2], xfolds=xfolds, evaluation=auc)
-        stacker.colnames = ['ets1'+dataset_version, 'ets2'+dataset_version]
+        stacker.colnames = ['ets1', 'ets2']
         stacker.fit(train, y_train)
 
         meta = stacker.meta_train
         meta['activity_id'] = id_train
+        meta['outcome'] = y_train
         meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index = False, header = True)
 
         preds = stacker.predict_proba(test)

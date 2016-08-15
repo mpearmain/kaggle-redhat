@@ -73,11 +73,11 @@ if __name__ == '__main__':
     lr4 = LogisticRegression(penalty='l1', C= 6, n_jobs=-1, random_state=seed_value)
 
     stacker = BinaryStackingClassifier([lr1, lr2, lr3, lr4], xfolds=xfolds, evaluation=auc)
-    stacker.colnames = ['lr1', 'lr2', 'lr3', 'lr4']
     stacker.fit(lootrain[['group_1', 'char_2_y', 'char_38', 'p_sum_true', 'days_diff']], train['outcome'])
 
     meta = stacker.meta_train
     meta['activity_id'] = train['activity_id']
+    meta['outcome'] = train['outcome']
     meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index = False, header = True)
 
     preds = stacker.predict_proba(lootest[['group_1', 'char_2_y', 'char_38', 'p_sum_true', 'days_diff']])

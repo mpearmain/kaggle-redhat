@@ -45,6 +45,7 @@ if __name__ == '__main__':
 
         meta = stacker.meta_train
         meta['activity_id'] = id_train
+        meta['outcome'] = y_train
         meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(
             seed_value) + '.csv', index=False, header=True)
 

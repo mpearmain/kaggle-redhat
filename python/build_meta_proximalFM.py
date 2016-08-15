@@ -6,10 +6,10 @@ import datetime
 
 from sklearn.metrics import roc_auc_score as auc
 
-from python.proximalFM.proximal_fm import ProximalFM
-from python.proximalFM.data_reader import DataReader
+from proximalFM.proximal_fm import ProximalFM
+from proximalFM.data_reader import DataReader
 
-from python.binary_stacker_np import BinaryStackingClassifierNP
+from binary_stacker_np import BinaryStackingClassifierNP
 
 if __name__ == "__main__":
 
@@ -150,6 +150,7 @@ if __name__ == "__main__":
 
     meta = stacker.meta_train
     meta['activity_id'] = xfolds['activity_id']
+    meta['outcome'] = ytrain
     meta.to_csv(projPath + 'metafeatures/prval_' + model_type + '_' + todate + '_data' + dataset_version + '_seed' + str(seed_value) + '.csv', index = False, header = True)
 
     preds = stacker.predict_proba(Xn_test)
