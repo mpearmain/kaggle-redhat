@@ -40,7 +40,6 @@ if __name__ == '__main__':
                                  silent=True, subsample=0.8, colsample_bytree=0.85, gamma=0.000000001, seed=seed_value)
 
         stacker = BinaryStackingClassifier([bst1, bst2], xfolds=xfolds, evaluation=auc)
-        stacker.colnames = ['bst1GBTREECLASS', 'bst2GBTREECLASS']
         stacker.fit(train, y_train, eval_metric='auc')
 
         meta = stacker.meta_train
