@@ -4,7 +4,8 @@ library(xgboost)
 library(dplyr)
 library(Matrix)
 require(caret)
-
+require(readr)
+require(stringr)
 
 dataset_version <- "base"
 seed_value <- 44556877
@@ -19,14 +20,26 @@ msg <-
     cat(sprintf(paste0("[%s] ",mmm),Sys.time(),...)); cat("\n")
   }
 
+
+auc <- function (actual, predicted) {
+  r <- as.numeric(rank(predicted))
+  
+  n_pos <- as.numeric(sum(actual == 1))
+  n_neg <- as.numeric(length(actual) - n_pos)
+  auc <-
+    (sum(r[actual == 1]) - n_pos * (n_pos + 1) / 2) / (n_pos *  n_neg)
+  auc
+  
+}
+
 # Pre process base data.
 
-train = fread('../input/act_train.csv') %>% as.data.frame()
-test = fread('../input/act_test.csv') %>% as.data.frame()
+train = fread('./input/act_train.csv') %>% as.data.frame()
+test = fread('./input/act_test.csv') %>% as.data.frame()
 
 
 #people data frame
-people = fread('../input/people.csv') %>% as.data.frame()
+people = fread('./input/people.csv') %>% as.data.frame()
 people$char_1 <- NULL #unnecessary duplicate to char_2
 names(people)[2:length(names(people))] = paste0('people_',names(people)[2:length(names(people))])
 
@@ -65,6 +78,7 @@ D$i = 1:dim(D)[1]
 
 
 test_activity_id = test$activity_id
+train_activity_id = train$activity_id
 rm(train,test,d1,d2);gc()
 
 
@@ -146,98 +160,74 @@ test.sparse = D.sparse[(row.train + 1):nrow(D.sparse),]
 ## Time to build a stacker.
 
 # division into folds: 5-fold
-xfolds <- fread("input/5-fold.csv", data.table=F)
+xfolds <- fread("./input/5-fold.csv", data.table=F)
 xfolds$fold_index <- xfolds$fold5
-xfolds <- xfolds[,c("ID", "fold_index")]
+xfolds <- xfolds[,c("activity_id", "fold_index")]
 nfolds <- length(unique(xfolds$fold_index))
 
 ## fit models ####
-# parameter grid
-param_grid <- expand.grid(deg = c(2,3))
 
 # storage structures
-mtrain <- array(0, c(nrow(xtrain), nrow(param_grid)))
-mtest <- array(0, c(nrow(xtest), nrow(param_grid)))
+mtrain <- array(0, c(nrow(train.sparse), 1))
+mtest <- array(0, c(nrow(test.sparse), 1))
 
-# loop over parameters
-for (ii in 1:nrow(param_grid))
+# loop over folds
+for (jj in 0:(nfolds-1))
 {
-  # loop over folds
-  for (jj in 1:nfolds)
-  {
-    isTrain <- which(xfolds$fold_index != jj)
-    isValid <- which(xfolds$fold_index == jj)
-    x0 <- xtrain[isTrain,]; x1 <- xtrain[isValid,]
-    y0 <- factor(y)[isTrain]; y1 <- factor(y)[isValid]
-    
-    # Hash train to sparse dmatrix X_train
-    dtrain  <- xgb.DMatrix(x0, label = y0)
-    dtest  <- xgb.DMatrix(x1)
-    
-    param <- list(
-      objective = "binary:logistic",
-      eval_metric = "auc",
-      booster = "gblinear",
-      eta = 0.02,
-      subsample = 0.7,
-      colsample_bytree = 0.7,
-      min_child_weight = 0,
-      max_depth = 10
-    )
-    
-    
-    set.seed(120)
-    m2 <- xgb.train(
-      data = dtrain,
-      param, nrounds = 305,
-      watchlist = list(train = dtrain),
-      print_every_n = 10
-    )
-    
-    # Predict
-    pred_valid <- predict(m2, dtest)
-    
-    print(log_loss((y1 == 1) + 0, pred_valid))
-    mtrain[isValid,ii] <- pred_valid
-  }
+  print(paste("running fold", jj))
+  isTrain <- which(xfolds$fold_index != jj)
+  isValid <- which(xfolds$fold_index == jj)
+  x0 <- train.sparse[isTrain,] 
+  x1 <- train.sparse[isValid,]
+  y0 <- Y[isTrain] 
+  y1 <- Y[isValid]
   
-  # full version
-  mars.model <-
-    earth(
-      x = xtrain, y = factor(y), degree = param_grid$deg[ii], glm = list(family =
-                                                                           binomial)
-    )
+  # Hash train to sparse dmatrix X_train
+  dtrain  <- xgb.DMatrix(x0, label = y0)
+  dtest  <- xgb.DMatrix(x1)
   
-  pred_full <- predict(mars.model, xtest, type = "response")
-  mtest[,ii] <- pred_full
-  msg(ii)
+  param <- list(
+    objective = "binary:logistic",
+    eval_metric = "auc",
+    booster = "gblinear",
+    eta = 0.05,
+    subsample = 0.72,
+    colsample_bytree = 0.72,
+    min_child_weight = 0,
+    max_depth = 11
+  )
+  
+  
+  set.seed(120)
+  m2 <- xgb.train(data = dtrain,param, nrounds = 350, watchlist = list(train = dtrain),print_every_n = 10)
+  
+  # Predict
+  pred_valid <- predict(m2, dtest)
+  
+  print(auc((y1 == 1) + 0, pred_valid))
+  mtrain[isValid,1] <- pred_valid
 }
+
+# full version
+# Hash train to sparse dmatrix X_train
+dtrain  <- xgb.DMatrix(train.sparse, label = Y)
+dtest  <- xgb.DMatrix(test.sparse)
+xgb.model <- xgb.train(data = dtrain, param, nrounds = 350,print_every_n = 10)
+
+pred_full <- predict(xgb.model, dtest)
+mtest[,1] <- pred_full
+msg(1)
 
 ## store complete versions ####
 mtrain <- data.frame(mtrain)
 mtest <- data.frame(mtest)
-colnames(mtrain) <-
-  colnames(mtest) <- paste(model_type, 1:ncol(mtrain), sep = "")
-mtrain$ID <- id_train
-mtest$ID <- id_test
-mtrain$target <- y
+colnames(mtrain) <-  colnames(mtest) <- paste(model_type, 1:ncol(mtrain), sep = "")
+mtrain$activity_id <- train_activity_id
+mtest$activity_id <- test_activity_id 
+mtrain$outcome <- Y
 
 
-
-write_csv(
-  mtrain, path = paste(
-    "./",target_folder, "/prval_",model_type,"_", todate, "_data", dataset_version, "_seed", seed_value, ".csv",sep = ""
-  )
-)
-write_csv(
-  mtest, path = paste(
-    "./",target_folder,"/prfull_",model_type,"_", todate, "_data", dataset_version, "_seed", seed_value, ".csv",sep = ""
-  )
-)
+write_csv(mtrain, path = paste("./",target_folder, "/prval_",model_type,"_", todate, "_data", dataset_version, "_seed", seed_value, ".csv",sep = ""  ))
+write_csv(mtest, path = paste("./",target_folder,"/prfull_",model_type,"_", todate, "_data", dataset_version, "_seed", seed_value, ".csv",sep = ""))
 
 
-
-
-
-sub <- data.frame(activity_id = test_activity_id, outcome = out)
-write.csv(sub, file = "model_sub.csv", row.names = F)

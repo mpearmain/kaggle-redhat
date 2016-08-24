@@ -34,10 +34,10 @@ def kerascv(dense1, dense2, epochs):
     pred_sum = 0
     for k in range(1):
         model = createModel(dense1=int(dense1), dropout1=0.05,
-                            dense2=int(dense2), dropout2=0.15)
-        model.fit(x0, y0, nb_epoch=int(epochs), batch_size=128, verbose=0, callbacks=[ival])
+                            dense2=int(dense2), dropout2=0.05)
+        model.fit(x0, y0, nb_epoch=int(epochs), batch_size=64, verbose=0, callbacks=[ival])
 
-        preds = model.predict_proba(x1, batch_size=128, verbose=0)[:,1]
+        preds = model.predict_proba(x1, batch_size=64, verbose=0)[:,1]
         pred_sum += preds
         pred_average = pred_sum / (k+1)
         del model
@@ -84,15 +84,11 @@ if __name__ == "__main__":
     todate = datetime.datetime.now().strftime("%Y%m%d")
 
     ## data
-    xtrain = pd.read_csv(projPath + 'input/xtrain_ds_' + dataset_version + '.csv')
+    xtrain = pd.read_csv(projPath + 'input/xvalid_20160817.csv')
     id_train = xtrain.activity_id
     y_train = xtrain.outcome
     xtrain.drop('activity_id', axis = 1, inplace = True)
     xtrain.drop('outcome', axis = 1, inplace = True)
-
-    test = pd.read_csv(projPath + 'input/xtest_ds_' + dataset_version + '.csv')
-    id_test = test.activity_id
-    test.drop('activity_id', axis = 1, inplace = True)
 
     encoder = LabelEncoder()
     y_train = encoder.fit_transform(y_train).astype(np.int32)
@@ -101,12 +97,9 @@ if __name__ == "__main__":
     print ("processsing finished")
     xtrain = np.array(xtrain)
     xtrain = xtrain.astype(np.float32)
-    test = np.array(test)
-    test = test.astype(np.float32)
 
     scaler = StandardScaler().fit(xtrain)
     xtrain = scaler.transform(xtrain)
-    test = scaler.transform(test)
 
     # folds
     xfolds = pd.read_csv(projPath + 'input/5-fold.csv')

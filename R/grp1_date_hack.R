@@ -3,7 +3,7 @@ library(data.table)
 
 
 # load and transform people data ------------------------------------------
-ppl <- fread("../input/people.csv")
+ppl <- fread("./input/people.csv")
 
 ### Recode logic to numeric
 p_logi <- names(ppl)[which(sapply(ppl, is.logical))]
@@ -19,8 +19,8 @@ ppl[,date := as.Date(as.character(date), format = "%Y-%m-%d")]
 # load activities ---------------------------------------------------------
 
 # read and combine
-activs <- fread("../input/act_train.csv")
-TestActivs <- fread("../input/act_test.csv")
+activs <- fread("./input/act_train.csv")
+TestActivs <- fread("./input/act_test.csv")
 TestActivs$outcome <- NA
 activs <- rbind(activs,TestActivs)
 rm(TestActivs)
@@ -124,6 +124,10 @@ testsetdt <- d1[
   d1$people_id %in% ppl$people_id[testset],
   c("activity_id","filled"), with = F
   ]
+
+##### ALL OF THIS TO GET ACTIVITY_ID's NOT covered by the hack
+
+
 testsetdt[is.na(testsetdt$filled), filled := testsetdt[,mean(filled, na.rm = T)]]
 colnames(testsetdt)[2] <- "outcome"
 write.csv(testsetdt,"Submission.csv", row.names = FALSE)

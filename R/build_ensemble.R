@@ -9,9 +9,10 @@ require(ranger)
 
 seed_value <- 9770
 todate <- str_replace_all(Sys.Date(), "-", "")
-nbag <- 3
+nbag <- 1
 
 id_var = 'activity_id'
+target = 'outcome'
 
 ## functions ####
 
@@ -103,40 +104,52 @@ xlist_full <- dir("./metafeatures/", pattern = "prfull", full.names = T)
 
 # aggregate validation set
 ii <- 1
-mod_class <- str_split(xlist_val[[ii]], "_")[[1]][[2]]
+mod_type <- str_split(xlist_val[[ii]], "_")[[1]][[2]]
+mod_data <- str_split(xlist_val[[ii]], "_")[[1]][[4]]
+mod_class <- paste(mod_type, mod_data, sep = '_')
+
 print(paste("Reading data for", mod_class))
 xvalid <- read_csv(xlist_val[[ii]])
-xcols <- colnames(xvalid)[-which(colnames(xvalid)==id_var)]
-xcols <- paste0(mod_class, xcols , ii, sep = "")
-colnames(xvalid)[-which(colnames(xvalid)==id_var)] <- xcols
+xcols <- colnames(xvalid)[-which(colnames(xvalid) %in% c(id_var, target))]
+xcols <- paste(mod_class, xcols , ii, sep = "_")
+colnames(xvalid)[-which(colnames(xvalid) %in% c(id_var, target))] <- xcols
 
 for (ii in 2:length(xlist_val))
 {
-  mod_class <- str_split(xlist_val[[ii]], "_")[[1]][[2]]
+  mod_type <- str_split(xlist_val[[ii]], "_")[[1]][[2]]
+  mod_data <- str_split(xlist_val[[ii]], "_")[[1]][[4]]
+  mod_class <- paste(mod_type, mod_data, sep = '_')
   print(paste("Reading data for", mod_class))
   xval <- read_csv(xlist_val[[ii]])
-  xcols <- colnames(xval)[-which(colnames(xval)==id_var)]
+  xcols <- colnames(xval)[-which(colnames(xval) %in% c(id_var, target))]
   xcols <- paste0(mod_class, xcols , ii, sep = "")
-  colnames(xval)[-which(colnames(xval)==id_var)] <- xcols
-  xvalid <- merge(xvalid, xval)
+  colnames(xval)[-which(colnames(xval) %in% c(id_var, target))] <- xcols
+  xvalid <- merge(xvalid, xval, by = c(id_var, target))
   msg(ii)
 }
 
-# aggregate test set
 ii <- 1
-mod_class <- str_split(xlist_full[[ii]], "_")[[1]][[2]]
-xfull <- read_csv(xlist_full[[ii]])
-xcols <- colnames(xfull)[-which(colnames(xfull)==id_var)]
-xcols <- paste(xcols , ii, sep = "")
-colnames(xfull)[-which(colnames(xfull)==id_var)] <- xcols
+mod_type <- str_split(xlist_full[[ii]], "_")[[1]][[2]]
+mod_data <- str_split(xlist_full[[ii]], "_")[[1]][[4]]
+mod_class <- paste(mod_type, mod_data, sep = '_')
 
-for (ii in 2:length(xlist_val))
+print(paste("Reading data for", mod_class))
+xfull <- read_csv(xlist_full[[ii]])
+xcols <- colnames(xfull)[-which(colnames(xfull) %in% c(id_var))]
+xcols <- paste(mod_class, xcols , ii, sep = "_")
+colnames(xfull)[-which(colnames(xfull) %in% c(id_var))] <- xcols
+
+for (ii in 2:length(xlist_full))
 {
+  mod_type <- str_split(xlist_full[[ii]], "_")[[1]][[2]]
+  mod_data <- str_split(xlist_full[[ii]], "_")[[1]][[4]]
+  mod_class <- paste(mod_type, mod_data, sep = '_')
+  print(paste("Reading data for", mod_class))
   xval <- read_csv(xlist_full[[ii]])
-  xcols <- colnames(xval)[-which(colnames(xval)==id_var)]
-  xcols <- paste(xcols , ii, sep = "")
-  colnames(xval)[-which(colnames(xval)==id_var)] <- xcols
-  xfull <- merge(xfull, xval)
+  xcols <- colnames(xval)[-which(colnames(xval) %in% c(id_var))]
+  xcols <- paste0(mod_class, xcols , ii, sep = "")
+  colnames(xval)[-which(colnames(xval) %in% c(id_var))] <- xcols
+  xfull <- merge(xfull, xval, by = c(id_var))
   msg(ii)
 }
 
@@ -232,8 +245,7 @@ write.csv(xfull,
           row.names = F)
 xfull$activity_id <- NULL
 
-for (ii in 0:(nfolds-1))
-{
+for (ii in 0:(nfolds-1)){
   # mix with glmnet: average over multiple alpha parameters
   isTrain <- which(xfolds$fold_index != ii)
   isValid <- which(xfolds$fold_index == ii)
@@ -242,15 +254,17 @@ for (ii in 0:(nfolds-1))
   y0 <- y[isTrain]
   y1 <- y[isValid]
   prx1 <- y1 * 0
-  for (jj in 1:11)
-  {
+  for (jj in 1:11) {
+    print(paste("Mixing GLMnet alpha", (jj - 1) * 0.1))
     mod0 <- glmnet(x = as.matrix(x0),
                    y = y0,
                    alpha = (jj - 1) * 0.1)
     prx <- predict(mod0, as.matrix(x1))
     prx <- prx[, ncol(prx)]
     prx1 <- prx1 + prx
+    print(auc(y1, prx1))
   }
+  
   storage_matrix[ii, 1] <- auc(y1, prx1)
   xvalid2[isValid, 1] <- prx1
   
@@ -259,16 +273,15 @@ for (ii in 0:(nfolds-1))
   x1d <- xgb.DMatrix(as.matrix(x1), label = y1)
   watch <- list(valid = x1d)
   prx2 <- y1 * 0
-  for (jj in 1:nbag)
-  {
+  for (jj in 1:nbag) {
     set.seed(seed_value + 1000 * jj + 2 ^ jj + 3 * jj ^ 2)
     clf <- xgb.train(
       booster = "gblinear",
       maximize = TRUE,
       print.every.n = 25,
-      nrounds = 250,
-      eta = 0.121700388765921064,
-      max.depth = 9,
+      nrounds = 400,
+      eta = 0.121,
+      max.depth = 11,
       colsample_bytree = 0.83914630981480487,
       subsample = 0.87375172168899873,
       #min_child_weight = 2.0,
@@ -282,13 +295,14 @@ for (ii in 0:(nfolds-1))
     prx2 <- prx2 + prx
   }
   prx2 <- prx2 / nbag
+  print(auc(y1, prx2))
+  
   storage_matrix[ii, 2] <- auc(y1, prx2)
   xvalid2[isValid, 2] <- prx2
   
   # mix with nnet:
   prx3 <- y1 * 0
-  for (jj in 1:nbag)
-  {
+  for (jj in 1:nbag)  {
     set.seed(seed_value + 1000 * jj + 2 ^ jj + 3 * jj ^ 2)
     net0 <-
       nnet(
@@ -301,12 +315,14 @@ for (ii in 0:(nfolds-1))
     prx3 <- prx3 + predict(net0, x1)
   }
   prx3 <- prx3 / nbag
+  print(auc(y1, prx3))
   storage_matrix[ii, 3] <- auc(y1, prx3)
   xvalid2[isValid, 3] <- prx3
   
   # mix with hillclimbing
   par0 <- buildEnsemble(c(1, 15, 5, 0.6), x0, y0)
   prx4 <- as.matrix(x1) %*% as.matrix(par0)
+  print(auc(y1, prx4))
   storage_matrix[ii, 4] <- auc(y1, prx4)
   xvalid2[isValid, 4] <- prx4
   
@@ -314,15 +330,16 @@ for (ii in 0:(nfolds-1))
   rf0 <- ranger(
     factor(y0) ~ .,
     data = x0,
-    mtry = 25,
+    mtry = 10,
     num.trees = 350,
     write.forest = T,
     probability = T,
     min.node.size = 10,
     seed = seed_value,
-    num.threads = 4
+    num.threads = 12
   )
   prx5 <- predict(rf0, x1)$predictions[, 2]
+  print(auc(y1, prx5))
   storage_matrix[ii, 5] <- auc(y1, prx5)
   xvalid2[isValid, 5] <- prx5
   
@@ -356,9 +373,9 @@ for (jj in 1:nbag)
     booster = "gblinear",
     maximize = TRUE,
     print.every.n = 25,
-    nrounds = 250,
-    eta = 0.121700388765921064,
-    max.depth = 9,
+    nrounds = 400,
+    eta = 0.121,
+    max.depth = 11,
     colsample_bytree = 0.83914630981480487,
     subsample = 0.87375172168899873,
     #min_child_weight = 2.0,
@@ -401,13 +418,13 @@ xfull2[, 4] <- prx4
 rf0 <- ranger(
   factor(y) ~ .,
   data = xvalid,
-  mtry = 25,
+  mtry = 10,
   num.trees = 350,
   write.forest = T,
   probability = T,
   min.node.size = 10,
   seed = seed_value,
-  num.threads = 4
+  num.threads = 12
 )
 prx5 <- predict(rf0, xfull)$predictions[, 2]
 xfull2[, 5] <- prx5

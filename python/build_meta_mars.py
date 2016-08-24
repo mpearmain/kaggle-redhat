@@ -34,10 +34,10 @@ if __name__ == '__main__':
         ## model
         # setup model instances
         # Combine Earth with LogisticRegression in a pipeline to do classification
-        earth_classifier1 = Pipeline([('earth', Earth(max_degree=2, penalty=1.5)),
+        earth_classifier1 = Pipeline([('earth', Earth(max_degree=1, penalty=.005)),
                                      ('logistic', LogisticRegression())])
         # Combine Earth with LogisticRegression in a pipeline to do classification
-        earth_classifier2 = Pipeline([('earth', Earth(max_degree=3, penalty=2)),
+        earth_classifier2 = Pipeline([('earth', Earth(max_degree=4, penalty=7)),
                                      ('logistic', LogisticRegression())])
 
         stacker = BinaryStackingClassifier([earth_classifier1, earth_classifier2], xfolds=xfolds, evaluation=auc)
