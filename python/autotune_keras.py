@@ -5,6 +5,8 @@ import numpy as np
 import datetime
 from bayes_opt import BayesianOptimization
 from keras.models import Sequential
+from keras.layers.normalization import BatchNormalization
+from keras.layers.advanced_activations import PReLU
 from keras.layers.core import Dropout, Activation, Dense, regularizers
 from keras.utils import np_utils
 from keras.callbacks import Callback
@@ -30,12 +32,24 @@ class IntervalEvaluation(Callback):
 
 def kerascv(dense1, dense2, epochs):
     ival = IntervalEvaluation(validation_data=(x1, y1), interval=1)
-    # setup bagging classifier
+
     pred_sum = 0
     for k in range(1):
-        model = createModel(dense1=int(dense1), dropout1=0.05,
-                            dense2=int(dense2), dropout2=0.05)
-        model.fit(x0, y0, nb_epoch=int(epochs), batch_size=64, verbose=0, callbacks=[ival])
+        model = Sequential()
+        model.add(Dense(int(dense1), input_shape=(dims,), init='he_uniform', W_regularizer=regularizers.l1(0.0005)))
+        model.add(Dropout(0.05))#    input dropout
+        model.add(PReLU())
+        model.add(BatchNormalization())
+        model.add(Dropout(0.1))
+        model.add(Dense(int(dense2)))
+        model.add(PReLU())
+        model.add(BatchNormalization())
+        model.add(Dropout(0.15))
+        model.add(Dense(nb_classes))
+        model.add(Activation('sigmoid'))
+        model.compile(loss='binary_crossentropy', optimizer="adam")
+        model.fit(x0, y0, nb_epoch=int(epochs), batch_size=128, verbose=0, callbacks=[ival])
+
 
         preds = model.predict_proba(x1, batch_size=64, verbose=0)[:,1]
         pred_sum += preds
@@ -45,19 +59,6 @@ def kerascv(dense1, dense2, epochs):
     loss = auc(y1[:,1],pred_average)
     return loss
 
-
-def createModel(dense1, dropout1, dense2, dropout2):
-    model = Sequential()
-    model.add(Dense(dense1, input_shape=(dims,), init='he_uniform', W_regularizer=regularizers.l1(0.0005)))
-    model.add(Activation('relu'))
-    model.add(Dropout(dropout1))# input dropout
-    model.add(Dense(dense2, init='he_uniform'))
-    model.add(Activation('relu'))
-    model.add(Dropout(dropout2))
-    model.add(Dense(nb_classes))
-    model.add(Activation('sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer="adagrad")
-    return model
 
 def getDummy(df,col):
         category_values=df[col].unique()
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     todate = datetime.datetime.now().strftime("%Y%m%d")
 
     ## data
-    xtrain = pd.read_csv(projPath + 'input/xvalid_20160817.csv')
+    xtrain = pd.read_csv(projPath + 'input/xvalid_20160821.csv')
     id_train = xtrain.activity_id
     y_train = xtrain.outcome
     xtrain.drop('activity_id', axis = 1, inplace = True)
@@ -119,11 +120,12 @@ if __name__ == "__main__":
     print(dims, 'dims')
 
     kerasBO = BayesianOptimization(kerascv,
-                                   {'dense1': (int(0.15 * xtrain.shape[1]), int(5 * xtrain.shape[1])),
-                                    #'dropout1': (0.15, 1.5),
+                                   {#'dropout_init':(0.01, 0.1),
+                                    'dense1': (int(0.15 * xtrain.shape[1]), int(5 * xtrain.shape[1])),
+                                    #'dropout1': (0.15, 0.5),
                                     'dense2': (int(0.15 * xtrain.shape[1]), int(5 * xtrain.shape[1])),
                                     #'dropout2': (0.05, 0.5),
-                                    'epochs': (int(15), int(50))
+                                    'epochs': (int(20), int(75))
                                     })
 
     kerasBO.maximize(init_points=3, n_iter=25)

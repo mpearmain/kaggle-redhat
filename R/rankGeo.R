@@ -1,7 +1,21 @@
 # Geo rank
 
 library(data.table)
-x1 <- fread("./Submission.csv", data.table = F)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+x1 <- fread("./submissions/xgb10bag-filled.csv/", data.table = F)
 x2 <- fread("./model_sub.csv", data.table = F)
 
 x1[,2] <- rank(x1[,2])/nrow(x1)
